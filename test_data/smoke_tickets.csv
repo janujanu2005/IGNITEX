@@ -1,0 +1,4 @@
+ticket_id,status,priority,summary,created
+1,Open,High,Payment gateway down,09:00
+2,Resolved,Medium,CPU spike fixed on prod server,10:00
+3,Monitoring,Low,Email queue delay ongoing,11:00

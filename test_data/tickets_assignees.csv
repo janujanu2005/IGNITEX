@@ -1,0 +1,8 @@
+ticket_id,status,priority,summary,created
+301,Open,High,Payment service failure,09:05
+302,Open,Medium,High CPU utilization on server,09:15
+303,Open,High,Database connection failure on replica,09:40
+304,Open,Medium,Email notification delay,10:15
+305,Open,High,Login page returning 500 error for users,10:30
+306,Open,Medium,Network packet loss detected on cluster,11:00
+307,Open,Low,Server disk usage at 90 percent,11:20

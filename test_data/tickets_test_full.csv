@@ -1,0 +1,11 @@
+ticket_id,status,priority,summary,created
+101,Open,High,Payment service failure causing checkout errors,09:05
+102,Monitoring,Medium,High CPU utilization on prod-server-3,09:15
+103,Resolved,Low,Login bug fixed for SSO users,09:40
+104,Open,Medium,Email notification delay over 30 minutes,10:15
+105,Resolved,High,Database connection issue fixed on replica,23:00
+106,Open,Critical,Payment gateway timeout affecting all transactions,10:30
+107,Open,High,Network latency spike on eu-west cluster,11:00
+108,Monitoring,Medium,Server memory usage above 85 percent threshold,11:20
+109,Resolved,Low,Email template rendering bug resolved,08:30
+110,Open,Critical,Database primary node unresponsive,11:45

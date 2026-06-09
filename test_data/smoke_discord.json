@@ -1,0 +1,12 @@
+[
+  {
+    "user": "alice_ops",
+    "message": "Payment service is completely broken, all checkouts failing!",
+    "time": "09:01"
+  },
+  {
+    "user": "bob_sre",
+    "message": "CPU usage is back to normal after the restart.",
+    "time": "10:05"
+  }
+]

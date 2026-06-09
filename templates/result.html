@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operational Dashboard — Shift Report</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="brand-icon"><i class="fa-solid fa-server"></i></div>
+    Operations Portal
+  </div>
+  <div class="navbar-right">
+    <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+    <span class="navbar-version">v2.0 · AI Active</span>
+  </div>
+</nav>
+
+<!-- DASHBOARD HERO BAR -->
+<div class="dash-hero">
+  <div class="dash-hero-left">
+    <h1>📊 Operational Metrics Dashboard</h1>
+    <div class="dash-hero-meta">
+      <i class="fa-regular fa-calendar-check" style="color:var(--indigo)"></i>
+      Generated: <strong>{{ timestamp }}</strong>
+      <span class="sep">·</span>
+      <i class="fa-solid fa-layer-group" style="color:var(--cyan)"></i>
+      <strong>{{ total_records }}</strong> records analyzed
+    </div>
+  </div>
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+    <a href="/output/handover_note.md" class="btn-download">
+      <i class="fa-solid fa-cloud-arrow-down"></i> Download .md
+    </a>
+    <a href="/" class="btn-ghost">
+      <i class="fa-solid fa-arrow-rotate-left"></i> New Run
+    </a>
+  </div>
+</div>
+
+<!-- DASHBOARD ROOT -->
+<div class="dash-root">
+
+  <!-- ══ LEFT NAV ══ -->
+  <aside class="dash-nav">
+
+    <div>
+      <div class="nav-section-label">Navigation</div>
+      <div class="nav-links">
+        <div class="nav-link active" data-section="overview">
+          <i class="fa-solid fa-gauge-high" style="color:var(--indigo)"></i> Shift Overview
+        </div>
+        <div class="nav-link" data-section="charts">
+          <i class="fa-solid fa-chart-pie" style="color:var(--cyan)"></i> Visualization
+        </div>
+        <div class="nav-link" data-section="tickets">
+          <i class="fa-solid fa-ticket" style="color:var(--emerald)"></i> Incident Tracker
+        </div>
+        <div class="nav-link" data-section="duplicates">
+          <i class="fa-solid fa-copy" style="color:var(--amber)"></i> Dedup Analysis
+          {% if duplicates %}<span class="nav-badge">{{ duplicates|length }}</span>{% endif %}
+        </div>
+        <div class="nav-link" data-section="assignees">
+          <i class="fa-solid fa-users" style="color:var(--violet)"></i> Team Dispatch
+        </div>
+        <div class="nav-link" data-section="report">
+          <i class="fa-solid fa-robot" style="color:var(--pink)"></i> AI Handover Note
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-section-label">Shift Stats</div>
+      <div class="nav-stat-grid">
+        <div class="nav-stat ns-rose">
+          <span class="nav-stat-num">{{ open_count }}</span>
+          <span class="nav-stat-lbl">Active</span>
+        </div>
+        <div class="nav-stat ns-green">
+          <span class="nav-stat-num">{{ resolved_count }}</span>
+          <span class="nav-stat-lbl">Closed</span>
+        </div>
+        <div class="nav-stat ns-amber">
+          <span class="nav-stat-num">{{ monitoring_count }}</span>
+          <span class="nav-stat-lbl">Watch</span>
+        </div>
+        <div class="nav-stat ns-indigo">
+          <span class="nav-stat-num">{{ discord_count }}</span>
+          <span class="nav-stat-lbl">Comms</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-section-label">Pipeline</div>
+      <div class="nav-pipeline">
+        <div class="pipeline-steps">
+          <div class="p-step done">
+            <div class="p-step-line"><div class="p-dot"></div><div class="p-track"></div></div>
+            <div class="p-body"><div class="p-label">Data Ingested</div><div class="p-desc">Raw logs loaded.</div></div>
+          </div>
+          <div class="p-step done">
+            <div class="p-step-line"><div class="p-dot"></div><div class="p-track"></div></div>
+            <div class="p-body"><div class="p-label">Filtered</div><div class="p-desc">Last 12 hours only.</div></div>
+          </div>
+          <div class="p-step done">
+            <div class="p-step-line"><div class="p-dot"></div><div class="p-track"></div></div>
+            <div class="p-body"><div class="p-label">AI Dedup</div><div class="p-desc">Gemini processed.</div></div>
+          </div>
+          <div class="p-step done">
+            <div class="p-step-line"><div class="p-dot"></div></div>
+            <div class="p-body"><div class="p-label">Output Ready</div><div class="p-desc">Download available.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <div class="dash-content">
+
+    <!-- ─────────────────── OVERVIEW ─────────────────── -->
+    <section id="section-overview" class="dash-section active-section">
+      <div class="page-header">
+        <h2><i class="fa-solid fa-gauge-high"></i> Shift Overview</h2>
+        <p>High-level summary of this shift window with key incident metrics.</p>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-rose">
+          <div class="kpi-top">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-fire-flame-curved"></i></div>
+            <span class="kpi-trend trend-down" id="trend-high">—</span>
+          </div>
+          <div class="kpi-val" id="kpi-high">—</div>
+          <div class="kpi-lbl">High / Critical</div>
+        </div>
+        <div class="kpi-card kpi-amber">
+          <div class="kpi-top">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <span class="kpi-trend trend-neu">Active</span>
+          </div>
+          <div class="kpi-val">{{ open_count }}</div>
+          <div class="kpi-lbl">Open Tickets</div>
+        </div>
+        <div class="kpi-card kpi-green">
+          <div class="kpi-top">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-check-double"></i></div>
+            <span class="kpi-trend trend-up">Done</span>
+          </div>
+          <div class="kpi-val">{{ resolved_count }}</div>
+          <div class="kpi-lbl">Resolved</div>
+        </div>
+        <div class="kpi-card kpi-indigo">
+          <div class="kpi-top">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-copy"></i></div>
+            <span class="kpi-trend {% if duplicates %}trend-down{% else %}trend-up{% endif %}">
+              {% if duplicates %}Found{% else %}Clean{% endif %}
+            </span>
+          </div>
+          <div class="kpi-val">{{ duplicates|length }}</div>
+          <div class="kpi-lbl">Duplicates</div>
+        </div>
+        <div class="kpi-card kpi-violet">
+          <div class="kpi-top">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-database"></i></div>
+            <span class="kpi-trend trend-neu">Total</span>
+          </div>
+          <div class="kpi-val">{{ total_records }}</div>
+          <div class="kpi-lbl">Records Parsed</div>
+        </div>
+      </div>
+
+      <!-- Risk alerts -->
+      {% for t in tickets_list %}
+      {% if t.priority in ['High','Critical'] and t.status == 'Open' %}
+      <div class="risk-banner">
+        <i class="fa-solid fa-triangle-exclamation risk-icon"></i>
+        <div class="risk-text">
+          <strong>Unresolved {{ t.priority }}: #{{ t.ticket_id }}</strong> —
+          {{ t.summary }}
+          <span class="risk-badge">+Risk</span>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+
+      <!-- Mini charts -->
+      <div class="charts-grid-3 mt-2">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa-solid fa-circle-half-stroke" style="color:var(--violet)"></i> Severity</div>
+          </div>
+          <div class="chart-wrap"><canvas id="miniDonut"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa-solid fa-bars" style="color:var(--emerald)"></i> Status</div>
+          </div>
+          <div class="chart-wrap"><canvas id="miniBar"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa-solid fa-tachometer-alt" style="color:var(--cyan)"></i> Resolution</div>
+          </div>
+          <div class="chart-wrap"><canvas id="miniGauge"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────── CHARTS ─────────────────── -->
+    <section id="section-charts" class="dash-section">
+      <div class="page-header">
+        <h2><i class="fa-solid fa-chart-pie"></i> Visualization</h2>
+        <p>Full visual breakdown of incident severity, status, and priority across this shift.</p>
+      </div>
+      <div class="charts-grid-2">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa-solid fa-circle-half-stroke" style="color:var(--violet)"></i> Severity Breakdown</div>
+            <span class="chart-pill">Donut</span>
+          </div>
+          <div class="chart-wrap-tall"><canvas id="bigDonut"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa-solid fa-bars" style="color:var(--emerald)"></i> Incident Status Counts</div>
+            <span class="chart-pill">Bar</span>
+          </div>
+          <div class="chart-wrap-tall"><canvas id="bigBar"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa-solid fa-list-ol" style="color:var(--indigo)"></i> Priority Distribution</div>
+            <span class="chart-pill">Horiz. Bar</span>
+          </div>
+          <div class="chart-wrap-tall"><canvas id="bigHBar"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa-solid fa-chart-pie" style="color:var(--rose)"></i> Open vs Resolved</div>
+            <span class="chart-pill">Pie</span>
+          </div>
+          <div class="chart-wrap-tall"><canvas id="bigPie"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────── TICKETS ─────────────────── -->
+    <section id="section-tickets" class="dash-section">
+      <div class="page-header">
+        <h2><i class="fa-solid fa-ticket"></i> Incident Tracker</h2>
+        <p>All filtered ticket records for this shift — searchable, sortable, and filterable in real time.</p>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="filter-input" id="ticketSearch" placeholder="Search tickets…" oninput="filterTickets()">
+        </div>
+        <select class="filter-select" id="statusFilter" onchange="filterTickets()">
+          <option value="">All Statuses</option>
+          <option>Open</option><option>Monitoring</option><option>Resolved</option>
+        </select>
+        <select class="filter-select" id="priorityFilter" onchange="filterTickets()">
+          <option value="">All Priorities</option>
+          <option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="ticketsTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Summary</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Assignee</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for t in tickets_list %}
+          <tr class="ticket-row" data-status="{{ t.status }}" data-priority="{{ t.priority }}">
+            <td><span class="tid">#{{ t.ticket_id }}</span></td>
+            <td class="summary-cell"><span>{{ t.summary }}</span></td>
+            <td><span class="badge badge-{{ t.priority|lower }}">{{ t.priority }}</span></td>
+            <td>
+              <span class="status-pill sp-{{ t.status|lower }}">
+                <span class="status-dot"></span>{{ t.status }}
+              </span>
+            </td>
+            <td class="text-muted" style="font-family:'JetBrains Mono',monospace;font-size:.8rem">{{ t.created }}</td>
+            <td>
+              <div class="a-chip">
+                <div class="a-avatar">{{ t.assignee.avatar }}</div>
+                <div>
+                  <div class="a-name">{{ t.assignee.name }}</div>
+                  <div style="font-size:.72rem;color:var(--txt-3)">{{ t.assignee.role }}</div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─────────────────── DUPLICATES ─────────────────── -->
+    <section id="section-duplicates" class="dash-section">
+      <div class="page-header">
+        <h2><i class="fa-solid fa-copy"></i> Dedup Analysis</h2>
+        <p>Ticket pairs with overlapping keywords — likely the same incident. Review and merge to avoid double-handling.</p>
+      </div>
+
+      {% if duplicates %}
+      <div class="dup-grid">
+        {% for d in duplicates %}
+        <div class="dup-card">
+          <div class="dup-top">
+            <div class="dup-top-icon"><i class="fa-solid fa-code-merge"></i></div>
+            <div class="dup-top-title">
+              Possible Duplicate — <strong>#{{ d.ticket_a }}</strong> &amp; <strong>#{{ d.ticket_b }}</strong>
+            </div>
+          </div>
+          <div class="dup-body">
+            <div class="dup-entry">
+              <span class="dup-tid">#{{ d.ticket_a }}</span>
+              <span class="dup-summary">{{ d.summary_a }}</span>
+            </div>
+            <div class="dup-entry">
+              <span class="dup-tid">#{{ d.ticket_b }}</span>
+              <span class="dup-summary">{{ d.summary_b }}</span>
+            </div>
+            <div class="dup-keywords">
+              <i class="fa-solid fa-link"></i>
+              <span>Shared keywords:</span>
+              {% for kw in d.overlap.split(' | ') %}
+              <span class="dup-kw-tag">{{ kw }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="fa-solid fa-circle-check"></i>
+        <p>No duplicate tickets detected in this shift window.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- ─────────────────── ASSIGNEES ─────────────────── -->
+    <section id="section-assignees" class="dash-section">
+      <div class="page-header">
+        <h2><i class="fa-solid fa-users"></i> Team Dispatch</h2>
+        <p>Auto-matched engineers for each open incident based on ticket keywords — ready to assign and action.</p>
+      </div>
+
+      <div class="assignee-grid">
+      {% for t in tickets_list %}
+      {% if t.status != 'Resolved' %}
+      <div class="assignee-card ac-{{ t.priority|lower }}">
+        <div class="ac-avatar">{{ t.assignee.avatar }}</div>
+        <div class="ac-info">
+          <div class="ac-name">{{ t.assignee.name }}</div>
+          <div class="ac-role">{{ t.assignee.role }}</div>
+        </div>
+        <div class="ac-right">
+          <span class="badge badge-{{ t.priority|lower }}">{{ t.priority }}</span>
+          <span class="ac-ticket-id">#{{ t.ticket_id }}</span>
+          <div class="ac-summary">{{ t.summary }}</div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+      </div>
+    </section>
+
+    <!-- ─────────────────── AI REPORT ─────────────────── -->
+    <section id="section-report" class="dash-section">
+      <div class="page-header">
+        <h2><i class="fa-solid fa-robot"></i> AI Handover Note</h2>
+        <p>Gemini AI synthesized this structured handover from raw Discord logs and ticket data — deduplicated and formatted for shift handoff.</p>
+      </div>
+      <div id="raw-md" style="display:none">{{ handover }}</div>
+      <div class="report-viewer" id="report-output">
+        <pre style="white-space:pre-wrap;font-family:inherit">{{ handover }}</pre>
+      </div>
+    </section>
+
+  </div><!-- dash-content -->
+</div><!-- dash-root -->
+
+<!-- FOOTER -->
+<footer>
+  <i class="fa-solid fa-shield-halved"></i>
+  <span>Internal Operations Portal</span>
+  <span class="footer-dot"></span>
+  <span>Enterprise Shift Handover Automation</span>
+</footer>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const PRI  = {{ priority_counts | safe }};
+const STAT = {{ status_counts   | safe }};
+
+// ── CHART DEFAULTS ────────────────────────────────────────────────────────────
+Chart.defaults.color         = '#8b9ab5';
+Chart.defaults.font.family   = 'Inter';
+Chart.defaults.font.size     = 12;
+
+const PALETTE = {
+  Critical:   '#fb7185', High:'#f97316', Medium:'#fbbf24', Low:'#10b981',
+  Open:'#6366f1', Monitoring:'#fbbf24', Resolved:'#10b981',
+};
+
+const TIP = {
+  plugins:{tooltip:{
+    backgroundColor:'rgba(3,6,15,0.92)',
+    borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+    titleColor:'#f0f4ff', bodyColor:'#8b9ab5',
+    padding:12, cornerRadius:10, displayColors:true,
+  }}
+};
+
+// ── DONUT ────────────────────────────────────────────────────────────────────
+function makeDonut(id, compact) {
+  const labels = Object.keys(PRI).filter(k=>PRI[k]>0);
+  const data   = labels.map(k=>PRI[k]);
+  const colors = labels.map(k=>PALETTE[k]);
+  return new Chart(document.getElementById(id),{
+    type:'doughnut',
+    data:{ labels, datasets:[{data, backgroundColor:colors, borderWidth:3,
+      borderColor:'rgba(3,6,15,0.8)', hoverOffset:10 }]},
+    options:{
+      cutout: compact?'68%':'62%',
+      animation:{animateRotate:true,duration:1400,easing:'easeOutQuart'},
+      plugins:{...TIP.plugins, legend:{
+        position: compact?'right':'bottom',
+        labels:{color:'#8b9ab5',padding:14,font:{size:11},boxWidth:10}
+      }}
+    }
+  });
+}
+
+// ── BAR ──────────────────────────────────────────────────────────────────────
+function makeBar(id) {
+  const labels = Object.keys(STAT);
+  const data   = Object.values(STAT);
+  const colors = labels.map(l=>PALETTE[l]||'#6366f1');
+  return new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{ labels, datasets:[{label:'Count',data, backgroundColor:colors,
+      borderRadius:8, borderSkipped:false}]},
+    options:{
+      animation:{duration:1000,easing:'easeOutCubic'},
+      plugins:{...TIP.plugins,legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#8b9ab5'},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'#8b9ab5',stepSize:1},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true}
+      }
+    }
+  });
+}
+
+// ── HBAR ─────────────────────────────────────────────────────────────────────
+function makeHBar(id) {
+  const labels=['Critical','High','Medium','Low'];
+  const data  = labels.map(k=>PRI[k]||0);
+  const colors= labels.map(k=>PALETTE[k]);
+  return new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{ labels, datasets:[{label:'Tickets',data,
+      backgroundColor:colors, borderRadius:6}]},
+    options:{
+      indexAxis:'y',
+      animation:{duration:1000},
+      plugins:{...TIP.plugins,legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#8b9ab5',stepSize:1},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true},
+        y:{ticks:{color:'#8b9ab5'},grid:{display:false}}
+      }
+    }
+  });
+}
+
+// ── PIE ──────────────────────────────────────────────────────────────────────
+function makePie(id) {
+  const d = [STAT['Open']||0, STAT['Resolved']||0, STAT['Monitoring']||0];
+  return new Chart(document.getElementById(id),{
+    type:'pie',
+    data:{labels:['Open','Resolved','Monitoring'],datasets:[{data:d,
+      backgroundColor:['#6366f1','#10b981','#fbbf24'],
+      borderWidth:3, borderColor:'rgba(3,6,15,0.8)', hoverOffset:10}]},
+    options:{
+      animation:{duration:1400},
+      plugins:{...TIP.plugins,legend:{position:'bottom',
+        labels:{color:'#8b9ab5',padding:14,font:{size:11},boxWidth:10}}}
+    }
+  });
+}
+
+// ── GAUGE ────────────────────────────────────────────────────────────────────
+function makeGauge(id) {
+  const total = Object.values(STAT).reduce((a,b)=>a+b,0)||1;
+  const res   = STAT['Resolved']||0;
+  const pct   = Math.round(res/total*100);
+  return new Chart(document.getElementById(id),{
+    type:'doughnut',
+    data:{datasets:[{data:[pct,100-pct],
+      backgroundColor:['#10b981','rgba(255,255,255,0.05)'],
+      borderWidth:0, circumference:200, rotation:260}]},
+    options:{
+      cutout:'76%',
+      animation:{duration:1200},
+      plugins:{...TIP.plugins,legend:{display:false}}
+    },
+    plugins:[{
+      id:'gaugeText',
+      afterDraw(c){
+        const {ctx,chartArea:{top,bottom,left,right}}=c;
+        const cx=(left+right)/2, cy=(top+bottom)/2+14;
+        ctx.save();
+        ctx.font='800 30px Inter'; ctx.fillStyle='#f0f4ff';
+        ctx.textAlign='center'; ctx.fillText(pct+'%',cx,cy);
+        ctx.font='600 11px Inter'; ctx.fillStyle='#8b9ab5';
+        ctx.fillText('RESOLVED',cx,cy+20);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// ── KPI FILL ─────────────────────────────────────────────────────────────────
+const highCount = (PRI['Critical']||0)+(PRI['High']||0);
+document.getElementById('kpi-high').textContent = highCount;
+document.getElementById('trend-high').textContent = highCount > 0 ? '⚠ Alert' : '✓ Clear';
+if (highCount > 0) document.getElementById('trend-high').classList.replace('trend-down','trend-down');
+else document.getElementById('trend-high').classList.replace('trend-down','trend-up');
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+
+  // mini charts (overview)
+  makeDonut('miniDonut', true);
+  makeBar('miniBar');
+  makeGauge('miniGauge');
+
+  // full charts
+  makeDonut('bigDonut', false);
+  makeBar('bigBar');
+  makeHBar('bigHBar');
+  makePie('bigPie');
+
+  // render AI markdown
+  try {
+    const md = document.getElementById('raw-md').textContent;
+    document.getElementById('report-output').innerHTML = marked.parse(md);
+  } catch(e){}
+
+  // nav switching
+  document.querySelectorAll('.nav-link[data-section]').forEach(link=>{
+    link.addEventListener('click',()=>{
+      document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+      link.classList.add('active');
+      const sec = link.dataset.section;
+      document.querySelectorAll('.dash-section').forEach(s=>s.classList.remove('active-section'));
+      document.getElementById('section-'+sec).classList.add('active-section');
+    });
+  });
+
+  // glow tracking
+  document.querySelectorAll('.chart-card,.kpi-card,.dup-card,.assignee-card').forEach(el=>{
+    el.addEventListener('mousemove',e=>{
+      const r=el.getBoundingClientRect();
+      el.style.setProperty('--x',(e.clientX-r.left)+'px');
+      el.style.setProperty('--y',(e.clientY-r.top)+'px');
+    });
+  });
+});
+
+// ── FILTER ───────────────────────────────────────────────────────────────────
+function filterTickets(){
+  const q  = document.getElementById('ticketSearch').value.toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+  const pr = document.getElementById('priorityFilter').value;
+  document.querySelectorAll('.ticket-row').forEach(row=>{
+    const ok = (!q  || row.textContent.toLowerCase().includes(q))
+            && (!st || row.dataset.status   === st)
+            && (!pr || row.dataset.priority === pr);
+    row.style.display = ok ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

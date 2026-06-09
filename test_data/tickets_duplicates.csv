@@ -1,0 +1,6 @@
+ticket_id,status,priority,summary,created
+201,Open,High,Payment service failure on checkout,09:05
+202,Open,Critical,Payment gateway timeout on checkout,10:30
+203,Open,Medium,Email notification delay in queue,10:15
+204,Monitoring,Low,Email delivery queue backlog,11:00
+205,Resolved,High,Database connection failure resolved,08:00

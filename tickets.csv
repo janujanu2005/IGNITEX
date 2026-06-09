@@ -1,0 +1,6 @@
+ticket_id,status,priority,summary,created
+101,Open,High,Payment service failure,09:05
+102,Monitoring,Medium,High CPU utilization,09:15
+103,Resolved,Low,Login bug fixed,09:40
+104,Open,Medium,Email notification delay,10:15
+105,Resolved,High,Database connection issue fixed,23:00

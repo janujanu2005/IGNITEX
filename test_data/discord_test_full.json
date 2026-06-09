@@ -1,0 +1,52 @@
+[
+  {
+    "user": "ops_alice",
+    "message": "Payment service is down, checkout is failing for all users. Raised ticket 101.",
+    "time": "09:04"
+  },
+  {
+    "user": "sre_bob",
+    "message": "Confirmed - payment gateway is timing out. Looking into it now.",
+    "time": "09:06"
+  },
+  {
+    "user": "ops_carol",
+    "message": "prod-server-3 CPU is at 94%, opened monitoring ticket.",
+    "time": "09:14"
+  },
+  {
+    "user": "dev_david",
+    "message": "SSO login bug has been patched and deployed to prod.",
+    "time": "09:38"
+  },
+  {
+    "user": "ops_alice",
+    "message": "Email notifications are queuing up, delay is 35+ minutes. Users are complaining.",
+    "time": "10:13"
+  },
+  {
+    "user": "sre_bob",
+    "message": "Database replica connection issue is fixed. Primary is stable.",
+    "time": "10:50"
+  },
+  {
+    "user": "ops_carol",
+    "message": "Payment gateway still throwing 504s. Looks like tickets 101 and 106 are the same issue.",
+    "time": "10:31"
+  },
+  {
+    "user": "infra_grace",
+    "message": "Network team sees latency spike on eu-west. Investigating BGP route change.",
+    "time": "11:02"
+  },
+  {
+    "user": "sre_frank",
+    "message": "Server memory alert on prod-server-3 and prod-server-5. Could be related to the CPU spike.",
+    "time": "11:22"
+  },
+  {
+    "user": "dba_bob",
+    "message": "CRITICAL: database primary node is not responding. Failover initiated.",
+    "time": "11:44"
+  }
+]
